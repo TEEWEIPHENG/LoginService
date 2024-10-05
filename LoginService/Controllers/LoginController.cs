@@ -1,5 +1,8 @@
 using LoginService.Models;
+using LoginService.Models.DTOs;
+using LoginService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace LoginService.Controllers
 {
@@ -7,54 +10,22 @@ namespace LoginService.Controllers
     [Route("api/[controller]")]
     public class LoginController : ControllerBase
     {
+        private readonly IUserService _userService;
         private readonly ILogger<LoginController> _logger;
-        private static readonly List<string> Users = new()
-        {
-            "John Doe", "Jane Smith", "Alex Johnson"
-        };
 
-        public LoginController(ILogger<LoginController> logger)
+        public LoginController(IUserService userService, ILogger<LoginController> logger)
         {
+            _userService = userService;
             _logger = logger;
         }
 
-        // GET: api/users
-        [HttpGet]
-        public ActionResult<IEnumerable<string>> GetUsers()
+        // GET: api/users/detail/1
+        [HttpGet("detail/{id}")]
+        public async Task<IActionResult> GetUserDetail(int id)
         {
-            return Ok(Users);
+            User result = await _userService.GetUserDetailAsync(id);
+            return Ok(result);
         }
 
-        // GET: api/users/2
-        [HttpGet("{id}")]
-        public ActionResult<string> GetUser(int id)
-        {
-            if (id < 0 || id >= Users.Count)
-                return NotFound("User not found");
-
-            return Ok(Users[id]);
-        }
-
-        // POST: api/users
-        [HttpPost]
-        public ActionResult AddUser([FromBody] string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest("Name cannot be empty");
-
-            Users.Add(name);
-            return Ok("User added successfully");
-        }
-
-        // DELETE: api/users/2
-        [HttpDelete("{id}")]
-        public ActionResult DeleteUser(int id)
-        {
-            if (id < 0 || id >= Users.Count)
-                return NotFound("User not found");
-
-            Users.RemoveAt(id);
-            return Ok("User deleted successfully");
-        }
     }
 }

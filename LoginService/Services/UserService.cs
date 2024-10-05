@@ -61,5 +61,11 @@ namespace LoginService.Services
                 return false;
             }
         }
+
+        public async Task<User> GetUserDetailAsync(int Id)
+        {
+            User result = await _context.Users.FirstOrDefaultAsync(user => user.Id == Id);
+            return result;
+        }
     }
 }
