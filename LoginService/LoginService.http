@@ -1,0 +1,23 @@
+@LoginService_HostAddress = https://localhost:7217
+# @LoginService_HostAddress = http://localhost:5256
+
+GET {{LoginService_HostAddress}}/api/Login
+Accept: application/json
+
+###
+
+GET {{LoginService_HostAddress}}/api/Register
+
+###
+
+POST {{LoginService_HostAddress}}/api/register
+
+###
+
+GET {{LoginService_HostAddress}}/api/login/0
+
+###
+
+GET {{LoginService_HostAddress}}/api/login/0
+
+###
