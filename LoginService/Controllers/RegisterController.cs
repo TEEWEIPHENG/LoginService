@@ -1,10 +1,6 @@
-﻿using LoginService.Models;
-using LoginService.Models.DTOs;
-using LoginService.Models.Entities;
+﻿using LoginService.Models.DTOs;
 using LoginService.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LoginService.Controllers
 {
@@ -32,13 +28,8 @@ namespace LoginService.Controllers
             }
 
             var result = await _userService.RegisterUserAsync(registerDto);
-
-            if (!result)
-            {
-                return BadRequest("Registration failed. Email or Username already exists.");
-            }
-
-            return Ok("User registered successfully.");
+            
+            return Ok(result.GetDescription());
         }
     }
 }

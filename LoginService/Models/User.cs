@@ -5,43 +5,51 @@ namespace LoginService.Models
     public class User
     {
         [Key]
-        public int Id { get; set; }  // Primary key
+        public int Id { get; set; }  
         [Required]
         [MaxLength(255)]
-        public string UserId { get; set; }  // Unique identifier for the user (e.g., GUID)
+        public string UserId { get; set; } = string.Empty;
 
         [MaxLength(50)]
-        public string Lastname { get; set; }  // Nullable
+        public string Lastname { get; set; } = string.Empty;
 
         [MaxLength(50)]
-        public string Firstname { get; set; }  // Nullable
+        public string Firstname { get; set; } = string.Empty; 
 
         [Required]
         [MaxLength(50)]
-        public string Username { get; set; }  // Nullable
-
-        [Required]
-        [MaxLength(255)]
-        public string Password { get; set; }  // Password is stored as a hashed string
+        public string Username { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(255)]
-        public string RoleId { get; set; }  // Role of the user, possibly used for role-based access control (e.g., "admin", "basic")
+        public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string RoleId { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
-        public string Email { get; set; }  // Email (unique in the system)
+        public string Email { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
-        public string MobileNo { get; set; }  // Phone number with a fixed length of 10 characters (nchar(10))
+        public string MobileNo { get; set; } = string.Empty;
 
-        public DateTime? LastLogin { get; set; }  // Last login date and time, nullable
-
-        [Required]
-        public DateTime? CreatedAt { get; set; }  // User creation timestamp, nullable
+        public DateTime? LastLogin { get; set; }
 
         [Required]
-        public DateTime? UpdatedAt { get; set; }  // Last update timestamp, nullable
+        public DateTime? CreatedAt { get; set; }
+
+        [Required]
+        public DateTime? UpdatedAt { get; set; }
+        [Required]
+        public bool IsValid { get; set; } = false;
+        [Required]
+        public bool IsEnabled { get; set; } = true;
+        [Required]
+        public bool IsLocked { get; set; } = false;
+        [Required]
+        public int WrongPasswordCount { get; set; } = 0;
     }
 }

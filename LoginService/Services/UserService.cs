@@ -3,6 +3,7 @@ using LoginService.Models;
 using Microsoft.AspNetCore.Identity;
 using LoginService.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using OnboardingStatusEnum = LoginService.Models.Enum.OnboardingStatus;
 
 namespace LoginService.Services
 {
@@ -11,55 +12,62 @@ namespace LoginService.Services
         private readonly DataContext _context;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<UserService> _logger;
+        private OnboardingService _onboardingService;
 
         public UserService(DataContext context, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _logger = logger;
+            _onboardingService = new OnboardingService(context);
         }
 
-        public async Task<bool> RegisterUserAsync(RegisterDTO registerDto)
+        public async Task<OnboardingStatusEnum> RegisterUserAsync(RegisterDTO registerDto)
         {
+            User newUser = new User();
+            var status = OnboardingStatusEnum.Fail;
             try
             {
-                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email || u.Username == registerDto.Username);
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email.Trim() || u.Username == registerDto.Username.Trim() || u.MobileNo == registerDto.MobileNo.Trim());
                 if (existingUser != null)
                 {
+                    status = OnboardingStatusEnum.AccountExisted;
                     _logger.LogWarning("User with this email or username already exists.");
                 }
-
-                // Create new user
-                var newUser = new User
+                else
                 {
-                    UserId = Guid.NewGuid().ToString(),
-                    Lastname = registerDto.Lastname,
-                    Firstname = registerDto.Firstname,
-                    Username = registerDto.Username,
-                    Email = registerDto.Email,
-                    MobileNo = registerDto.MobileNo,
-                    RoleId = "test role", //waiting
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now,
-                    LastLogin = null
-                };
+                    newUser.UserId = Guid.NewGuid().ToString().ToUpper();
+                    newUser.Lastname = registerDto.Lastname.Trim();
+                    newUser.Firstname = registerDto.Firstname.Trim();
+                    newUser.Username = registerDto.Username.Trim();
+                    newUser.Email = registerDto.Email.Trim();
+                    newUser.MobileNo = registerDto.MobileNo.Trim();
+                    newUser.RoleId = registerDto.RoleId.Trim();
+                    newUser.CreatedAt = DateTime.Now;
+                    newUser.UpdatedAt = DateTime.Now;
+                    newUser.LastLogin = null;
 
-                // Hash the password
-                newUser.Password = _passwordHasher.HashPassword(newUser, registerDto.Password);
+                    newUser.Password = _passwordHasher.HashPassword(newUser, registerDto.Password);
 
-                // Add the new user to the database
-                await _context.Users.AddAsync(newUser);
-                await _context.SaveChangesAsync();
+                    await _context.Users.AddAsync(newUser);
+                    await _context.SaveChangesAsync();
 
-                _logger.LogInformation("User registered successfully.");
+                    status =OnboardingStatusEnum.Success;
 
-                return true;
+                    _logger.LogInformation("User registered successfully.");
+                }               
             }
             catch (Exception ex)
             {
-                _logger.LogError("RegisterUser Error: ", ex.Message);
-                return false;
+                status = OnboardingStatusEnum.Error;
+                _logger.LogError("RegisterUser Error: " + ex.Message);
             }
+            finally
+            {
+                await _onboardingService.InsertOnboardingLog(registerDto, (int)status);
+            }
+
+            return status;
         }
 
         public async Task<User> GetUserDetailAsync(int Id)

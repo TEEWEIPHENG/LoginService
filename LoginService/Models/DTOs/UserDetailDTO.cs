@@ -1,6 +1,6 @@
 ﻿namespace LoginService.Models.DTOs
 {
-    public class UserDetailDTO
+    public class UserDTO
     {
         public string UserName { get; set; }
     }
