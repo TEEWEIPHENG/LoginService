@@ -27,7 +27,7 @@ namespace LoginService.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _userService.RegisterUserAsync(registerDto);
+            var result = await _userService.RegisterAsync(registerDto);
             
             return Ok(result.GetDescription());
         }

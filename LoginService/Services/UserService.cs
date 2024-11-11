@@ -22,7 +22,7 @@ namespace LoginService.Services
             _onboardingService = new OnboardingService(context);
         }
 
-        public async Task<OnboardingStatusEnum> RegisterUserAsync(RegisterDTO registerDto)
+        public async Task<OnboardingStatusEnum> RegisterAsync(RegisterDTO registerDto)
         {
             User newUser = new User();
             var status = OnboardingStatusEnum.Fail;
@@ -70,10 +70,43 @@ namespace LoginService.Services
             return status;
         }
 
-        public async Task<User> GetUserDetailAsync(int Id)
+        public async Task<bool> LoginAsync(string usernameOrEmail, string password)
         {
-            User result = await _context.Users.FirstOrDefaultAsync(user => user.Id == Id);
-            return result;
+            try
+            {
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == usernameOrEmail.Trim() || u.Email == usernameOrEmail.Trim());
+
+                if (user != null && user.IsValid && user.IsEnabled && !user.IsLocked)
+                {
+                    var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+                    if (verificationResult == PasswordVerificationResult.Success)
+                    {
+                        // Reset WrongPasswordCount on successful login
+                        user.WrongPasswordCount = 0;
+                        await _context.SaveChangesAsync();
+                        return true;
+                    }
+                    else
+                    {
+                        user.WrongPasswordCount++;
+                         
+                        const int maxAttempts = 3;
+                        if (user.WrongPasswordCount >= maxAttempts)
+                        {
+                            user.IsLocked = true;
+                        }
+
+                        await _context.SaveChangesAsync();
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Login Error: " + ex.Message);
+            }
+
+            return false;
         }
     }
 }

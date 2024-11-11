@@ -7,7 +7,8 @@ namespace LoginService.Services
 {
     public interface IUserService
     {
-        Task<OnboardingStatusEnum> RegisterUserAsync(RegisterDTO registerDto);
-        Task<User> GetUserDetailAsync(int Id);
+        Task<OnboardingStatusEnum> RegisterAsync(RegisterDTO registerDto);
+        Task<OnboardingStatusEnum> ActivationAsync(string OTP, string referenceNo);
+        Task<bool> LoginAsync(string username, string password);
     }
 }

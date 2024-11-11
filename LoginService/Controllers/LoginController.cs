@@ -19,11 +19,12 @@ namespace LoginService.Controllers
             _logger = logger;
         }
 
-        // GET: api/users/detail/1
-        [HttpGet("detail/{id}")]
-        public async Task<IActionResult> GetUserDetail(int id)
+        [HttpPost]
+        [Route("process")]
+        public async Task<IActionResult> ProcessLogin([FromBody] LoginDTO loginDTO)
         {
-            User result = await _userService.GetUserDetailAsync(id);
+            var result = await _userService.LoginAsync(loginDTO.Username, loginDTO.Password);
+
             return Ok(result);
         }
 
