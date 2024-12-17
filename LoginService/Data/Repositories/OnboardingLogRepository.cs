@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LoginService.Models
+namespace LoginService.Data.Repositories
 {
-    public class OnboardingLog
+    public class OnboardingLogRepository
     {
         [Key]
         public int Id { get; set; }
@@ -14,7 +14,7 @@ namespace LoginService.Models
 
         [Required]
         [MaxLength(50)]
-        public string Username { get; set; } = string.Empty; 
+        public string Username { get; set; } = string.Empty;
         [Required]
         [MaxLength(255)]
         public string MobileNo { get; set; } = string.Empty;

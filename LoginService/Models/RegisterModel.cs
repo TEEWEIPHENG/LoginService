@@ -1,6 +1,6 @@
-﻿namespace LoginService.Models.DTOs
+﻿namespace LoginService.Models
 {
-    public class RegisterDTO
+    public class RegisterModel
     {
         public string Lastname { get; set; } = string.Empty;
         public string Firstname { get; set; } = string.Empty;

@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LoginService.Models
+namespace LoginService.Data.Repositories
 {
-    public class OnboardingStatus
+    public class OnboardingStatusRepository
     {
         [Key]
         public int Id { get; set; }

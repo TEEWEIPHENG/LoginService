@@ -2,7 +2,7 @@
 
 namespace LoginService.Models.Enum
 {
-    public enum OnboardingStatus
+    public enum OnboardingStatusEnum
     {
         [Description("Success")]
         Success = 1,

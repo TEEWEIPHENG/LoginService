@@ -1,5 +1,4 @@
 using LoginService.Models;
-using LoginService.Models.DTOs;
 using LoginService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -21,7 +20,7 @@ namespace LoginService.Controllers
 
         [HttpPost]
         [Route("process")]
-        public async Task<IActionResult> ProcessLogin([FromBody] LoginDTO loginDTO)
+        public async Task<IActionResult> ProcessLogin([FromBody] LoginModel loginDTO)
         {
             var result = await _userService.LoginAsync(loginDTO.Username, loginDTO.Password);
 

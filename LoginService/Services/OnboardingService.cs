@@ -1,10 +1,10 @@
-﻿using LoginService.Models;
-using LoginService.Models.DTOs;
-using LoginService.Models.Entities;
+﻿using LoginService.Data;
+using LoginService.Data.Repositories;
+using LoginService.Models;
 
 namespace LoginService.Services
 {
-    public class OnboardingService
+    public class OnboardingService : IOnboardingService
     {
         private readonly DataContext _context;
         public OnboardingService(DataContext context)
@@ -12,9 +12,9 @@ namespace LoginService.Services
             _context = context;
         }
 
-        public async Task InsertOnboardingLog(RegisterDTO user, int status)
+        public async Task InsertOnboardingLog(RegisterModel user, int status)
         {
-            OnboardingLog onboardingLog = new OnboardingLog()
+            OnboardingLogRepository onboardingLog = new OnboardingLogRepository()
             {
                 Lastname = user.Lastname,
                 Firstname = user.Firstname,

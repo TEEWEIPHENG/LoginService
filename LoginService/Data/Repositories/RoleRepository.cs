@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LoginService.Models
+namespace LoginService.Data.Repositories
 {
-    public class Role
+    public class RoleRepository
     {
         [Key]
         public int Id { get; set; }
@@ -12,7 +12,7 @@ namespace LoginService.Models
         [Required]
         [MaxLength(255)]
         public string Name { get; set; } = string.Empty;
-        
+
         [MaxLength(255)]
         public string Description { get; set; } = string.Empty;
         [Required]

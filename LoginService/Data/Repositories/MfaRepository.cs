@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LoginService.Models
+namespace LoginService.Data.Repositories
 {
-    public class MFA
+    public class MfaRepository
     {
         [Key]
         public int Id { get; set; }
@@ -11,7 +11,9 @@ namespace LoginService.Models
         [Required]
         public string ReferenceNo { get; set; } = string.Empty;
         [Required]
-        public string UserId{ get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        [Required]
+        public int IsValid { get; set; } = 0;
         [Required]
         public DateTime CreateAt { get; set; } = DateTime.Now;
     }

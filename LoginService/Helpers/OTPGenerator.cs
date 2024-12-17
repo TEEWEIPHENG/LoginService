@@ -1,4 +1,6 @@
-﻿namespace LoginService.Helpers
+﻿using System.Text;
+
+namespace LoginService.Helpers
 {
     public class OTPGenerator
     {
@@ -10,7 +12,16 @@
 
         public static string GenerateReferenceNo()
         {
-            return Guid.NewGuid().ToString();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            StringBuilder result = new StringBuilder();
+            Random random = new Random();
+
+            for (int i = 0; i < 6; i++)
+            {
+                result.Append(chars[random.Next(chars.Length)]);
+            }
+
+            return result.ToString();
         }
     }
 }

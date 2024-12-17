@@ -1,4 +1,4 @@
-﻿using LoginService.Models.DTOs;
+﻿using LoginService.Models;
 using LoginService.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +19,7 @@ namespace LoginService.Controllers
 
         [HttpPost]
         [Route("Process")]
-        public async Task<IActionResult> ProcessRegistration([FromBody] RegisterDTO registerDto)
+        public async Task<IActionResult> ProcessRegistration([FromBody] RegisterModel registerDto)
         {
             if (!ModelState.IsValid)
             {
@@ -31,9 +31,9 @@ namespace LoginService.Controllers
             return Ok(result.GetDescription());
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("ValidateActivation")]
-        public async Task<IActionResult> ValidateActivationAsync([FromBody] ValidateActivationDTO request)
+        public async Task<IActionResult> ValidateActivationAsync([FromBody] ValidateActivationModel request)
         {
             if (!ModelState.IsValid)
             {
@@ -42,12 +42,12 @@ namespace LoginService.Controllers
 
             var result = await _userService.ValidateActivationAsync(request.Username, request.MobileNo);
 
-            return result ? Ok(result) : BadRequest(ModelState);
+            return Ok(result);
         }
 
         [HttpPost]
         [Route("Activate")]
-        public async Task<IActionResult> ActivateUser([FromBody] MfaDTO request)
+        public async Task<IActionResult> ActivateUser([FromBody] MfaModel request)
         {
             if (!ModelState.IsValid)
             {

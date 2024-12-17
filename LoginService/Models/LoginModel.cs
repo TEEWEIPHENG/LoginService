@@ -1,6 +1,6 @@
-﻿namespace LoginService.Models.DTOs
+﻿namespace LoginService.Models
 {
-    public class LoginDTO
+    public class LoginModel
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;

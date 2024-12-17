@@ -1,5 +1,5 @@
-using LoginService.Models;
-using LoginService.Models.Entities;
+using LoginService.Data;
+using LoginService.Data.Repositories;
 using LoginService.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +12,7 @@ builder.Services.AddDbContext<DataContext>(options =>
 );
 
 builder.Services.AddScoped<IUserService, UserService>();  // Add the UserService
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();  // Add password hasher
+builder.Services.AddScoped<IPasswordHasher<UserRepository>, PasswordHasher<UserRepository>>();  // Add password hasher
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

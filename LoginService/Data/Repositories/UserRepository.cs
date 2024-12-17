@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LoginService.Models
+namespace LoginService.Data.Repositories
 {
-    public class User
+    public class UserRepository
     {
         [Key]
-        public int Id { get; set; }  
+        public int Id { get; set; }
         [Required]
         [MaxLength(255)]
         public string UserId { get; set; } = string.Empty;
@@ -14,7 +14,7 @@ namespace LoginService.Models
         public string Lastname { get; set; } = string.Empty;
 
         [MaxLength(50)]
-        public string Firstname { get; set; } = string.Empty; 
+        public string Firstname { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
