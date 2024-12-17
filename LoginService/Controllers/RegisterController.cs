@@ -17,9 +17,8 @@ namespace LoginService.Controllers
             _logger = logger;
         }
 
-        // POST: api/register/process
         [HttpPost]
-        [Route("process")]
+        [Route("Process")]
         public async Task<IActionResult> ProcessRegistration([FromBody] RegisterDTO registerDto)
         {
             if (!ModelState.IsValid)
@@ -30,6 +29,34 @@ namespace LoginService.Controllers
             var result = await _userService.RegisterAsync(registerDto);
             
             return Ok(result.GetDescription());
+        }
+
+        [HttpGet]
+        [Route("ValidateActivation")]
+        public async Task<IActionResult> ValidateActivationAsync([FromBody] ValidateActivationDTO request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _userService.ValidateActivationAsync(request.Username, request.MobileNo);
+
+            return result ? Ok(result) : BadRequest(ModelState);
+        }
+
+        [HttpPost]
+        [Route("Activate")]
+        public async Task<IActionResult> ActivateUser([FromBody] MfaDTO request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _userService.ActivationAsync(request.otp, request.referenceNo);
+
+            return result ? Ok("Activated Successful") : Ok("Activation Failure");
         }
     }
 }

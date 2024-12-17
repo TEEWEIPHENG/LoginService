@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using LoginService.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using OnboardingStatusEnum = LoginService.Models.Enum.OnboardingStatus;
+using Microsoft.AspNetCore.Components.Forms;
+using LoginService.Helpers;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace LoginService.Services
 {
@@ -106,6 +109,51 @@ namespace LoginService.Services
                 _logger.LogError("Login Error: " + ex.Message);
             }
 
+            return false;
+        }
+        public async Task<bool> ValidateActivationAsync(string username, string mobileNo)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.Equals(username.Trim()) && u.MobileNo.Equals(mobileNo.Trim()));
+                if(user != null && user.IsEnabled)
+                {
+                    if (user.IsValid)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        MFA mFA = new()
+                        {
+                            OTP = OTPGenerator.GenerateOTP(),
+                            ReferenceNo = OTPGenerator.GenerateReferenceNo(),
+                            UserId = user.UserId,
+                            CreateAt = DateTime.Now,
+                        };
+                        //send OTP
+                        await _context.MFA.AddAsync(mFA);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Activation Error: " + ex.Message);
+            }
+            return false;
+        }
+
+        public async Task<bool> ActivationAsync(string otp, string referenceNo)
+        {
+            try
+            {
+                return await _context.MFA.AnyAsync(m => m.OTP == otp.Trim() && m.OTP == referenceNo.Trim() && DateTime.Now < m.CreateAt.AddMinutes(2));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Activation Error: " + ex.Message);
+            }
             return false;
         }
     }
