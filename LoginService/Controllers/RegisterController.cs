@@ -32,15 +32,10 @@ namespace LoginService.Controllers
         }
 
         [HttpPost]
-        [Route("ValidateActivation")]
-        public async Task<IActionResult> ValidateActivationAsync([FromBody] ValidateActivationModel request)
+        [Route("RequestOTP")]
+        public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _userService.ValidateActivationAsync(request.Username, request.MobileNo);
+            var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
 
             return Ok(result);
         }

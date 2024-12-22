@@ -7,8 +7,10 @@ namespace LoginService.Services
     public interface IUserService
     {
         Task<OnboardingStatusEnum> RegisterAsync(RegisterModel registerDto);
-        Task<ValidateActivationResponse> ValidateActivationAsync(string username, string mobileNo);
+        Task<RequestOTPResponse> RequestOTPAsync(string username, string mobileNo);
         Task<bool> ActivationAsync(string otp, string referenceNo);
         Task<bool> LoginAsync(string username, string password);
+        Task<bool> ForgotPasswordAsync(string newPassword, string confirmPassword, string otp, string referenceNo);
+        Task<bool> ResetUsernameAsync(string newUsername, string otp, string referenceNo);
     }
 }

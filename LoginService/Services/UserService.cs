@@ -1,13 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OnboardingStatusEnum = LoginService.Models.Enum.OnboardingStatusEnum;
-using Microsoft.AspNetCore.Components.Forms;
 using LoginService.Helpers;
-using Microsoft.AspNetCore.Http.HttpResults;
 using LoginService.Data;
 using LoginService.Data.Repositories;
 using LoginService.Models;
-using Azure;
+using System.Reflection.Metadata.Ecma335;
+using static System.Net.WebRequestMethods;
 
 namespace LoginService.Services
 {
@@ -17,6 +16,8 @@ namespace LoginService.Services
         private readonly IPasswordHasher<UserRepository> _passwordHasher;
         private readonly ILogger<UserService> _logger;
         private OnboardingService _onboardingService;
+        private readonly OTPValidator _otpValidator;
+        private readonly UserDetailValidator _userDetailValidator;
 
         public UserService(DataContext context, IPasswordHasher<UserRepository> passwordHasher, ILogger<UserService> logger)
         {
@@ -24,16 +25,21 @@ namespace LoginService.Services
             _passwordHasher = passwordHasher;
             _logger = logger;
             _onboardingService = new OnboardingService(context);
+            _otpValidator = new OTPValidator(context);
+            _userDetailValidator = new UserDetailValidator(context);
         }
 
-        public async Task<OnboardingStatusEnum> RegisterAsync(RegisterModel registerDto)
+        public async Task<OnboardingStatusEnum> RegisterAsync(RegisterModel request)
         {
             UserRepository newUser = new UserRepository();
             var status = OnboardingStatusEnum.Fail;
             try
             {
-                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email.Trim() || u.Username == registerDto.Username.Trim() || u.MobileNo == registerDto.MobileNo.Trim());
-                if (existingUser != null)
+                var isValidUser = await _userDetailValidator.ValidateUsername(request.Username) 
+                        || await _userDetailValidator.ValidateEmail(request.Email)
+                        || await _userDetailValidator.ValidateMobileNo(request.MobileNo);
+
+                if (isValidUser)
                 {
                     status = OnboardingStatusEnum.AccountExisted;
                     _logger.LogWarning("User with this email or username already exists.");
@@ -41,17 +47,17 @@ namespace LoginService.Services
                 else
                 {
                     newUser.UserId = Guid.NewGuid().ToString().ToUpper();
-                    newUser.Lastname = registerDto.Lastname.Trim();
-                    newUser.Firstname = registerDto.Firstname.Trim();
-                    newUser.Username = registerDto.Username.Trim();
-                    newUser.Email = registerDto.Email.Trim();
-                    newUser.MobileNo = registerDto.MobileNo.Trim();
-                    newUser.RoleId = registerDto.RoleId.Trim();
+                    newUser.Lastname = request.Lastname.Trim();
+                    newUser.Firstname = request.Firstname.Trim();
+                    newUser.Username = request.Username.Trim();
+                    newUser.Email = request.Email.Trim();
+                    newUser.MobileNo = request.MobileNo.Trim();
+                    newUser.RoleId = request.RoleId.Trim();
                     newUser.CreatedAt = DateTime.Now;
                     newUser.UpdatedAt = DateTime.Now;
                     newUser.LastLogin = null;
 
-                    newUser.Password = _passwordHasher.HashPassword(newUser, registerDto.Password);
+                    newUser.Password = _passwordHasher.HashPassword(newUser, request.Password);
 
                     await _context.Users.AddAsync(newUser);
                     await _context.SaveChangesAsync();
@@ -68,7 +74,7 @@ namespace LoginService.Services
             }
             finally
             {
-                await _onboardingService.InsertOnboardingLog(registerDto, (int)status);
+                await _onboardingService.InsertOnboardingLog(request, (int)status);
             }
 
             return status;
@@ -78,7 +84,7 @@ namespace LoginService.Services
         {
             try
             {
-                var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == usernameOrEmail.Trim() || u.Email == usernameOrEmail.Trim());
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.Username.ToLower() == usernameOrEmail.Trim().ToLower() || u.Email.ToLower() == usernameOrEmail.Trim().ToLower());
 
                 if (user != null && user.IsValid && user.IsEnabled && !user.IsLocked)
                 {
@@ -112,12 +118,12 @@ namespace LoginService.Services
 
             return false;
         }
-        public async Task<ValidateActivationResponse> ValidateActivationAsync(string username, string mobileNo)
+        public async Task<RequestOTPResponse> RequestOTPAsync(string username, string mobileNo)
         {
-            ValidateActivationResponse response = new ValidateActivationResponse();
+            RequestOTPResponse response = new RequestOTPResponse();
             try
             {
-                _logger.LogInformation("ValidateActivationStart: ", username, mobileNo);
+                _logger.LogInformation($"RequestOTP: {username}, {mobileNo}");
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.Equals(username.Trim()) && u.MobileNo.Equals(mobileNo.Trim()));
                 if(user != null && user.IsEnabled)
                 {
@@ -134,11 +140,13 @@ namespace LoginService.Services
 
                     response.status = true;
                     response.referenceNo = mFA.ReferenceNo;
+
+                    //send email or sms OTP
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("ValidateActivation Error: " + ex.Message);
+                _logger.LogError("RequestOTP Error: " + ex.Message);
             }
             return response;
         }
@@ -147,10 +155,9 @@ namespace LoginService.Services
         {
             try
             {
-                var response = await _context.MFA.FirstOrDefaultAsync(m => m.OTP.Equals(otp.Trim()) && m.ReferenceNo.Equals(referenceNo.Trim()) && m.IsValid == 0);
-                if (response != null && DateTime.Now < response.CreateAt.AddMinutes(2))
+                var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
+                if (response != null)
                 {
-                    response.IsValid = 1;
                     var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == response.UserId);
                     if (user != null)
                         user.IsValid = true;
@@ -161,6 +168,76 @@ namespace LoginService.Services
             catch (Exception ex)
             {
                 _logger.LogError("Activation Error: " + ex.Message);
+            }
+            return false;
+        }
+
+        public async Task<string> ValidateForgotPasswordAsync(string otp, string referenceNo)
+        {
+            try
+            {
+                var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
+                if(response != null)
+                {
+                    //check again user 
+                    return response.UserId;
+                }
+                _logger.LogInformation($"ValidateForgotPassword Success: {referenceNo}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("ForgotPassword Error: " + ex.Message);
+            }
+            return null;
+        }
+        public async Task<bool> ForgotPasswordAsync(string newPassword, string confirmPassword, string otp, string referenceNo)
+        {
+            try
+            {
+                //validate OTP
+                var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
+                if (response != null)
+                {
+                    var user = await _context.Users.Where(u => u.UserId == response.UserId).FirstOrDefaultAsync();
+                    if (user!= null && newPassword.Trim() == confirmPassword.Trim())
+                    {
+                        user.Password = _passwordHasher.HashPassword(user, newPassword.Trim());
+                        //update password
+                        await _context.SaveChangesAsync();
+                        return true;
+                    }
+                }
+                _logger.LogInformation($"ForgotPassword Success.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("ForgotPassword Error: " + ex.Message);
+            }
+            return false;
+        }
+        public async Task<bool> ResetUsernameAsync(string newUsername, string otp, string referenceNo)
+        {
+            try
+            {
+                //validate OTP
+                var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
+                if (response != null)
+                {
+                    var user = await _context.Users.Where(u => u.UserId == response.UserId).FirstOrDefaultAsync();
+                    var isValidUsername = await _userDetailValidator.ValidateUsername(newUsername);
+                    if (user != null && isValidUsername)
+                    {
+                        user.Username = newUsername.Trim();
+                        //update password
+                        await _context.SaveChangesAsync();
+                        return true;
+                    }
+                }
+                _logger.LogInformation($"ForgotPassword Success.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("ForgotPassword Error: " + ex.Message);
             }
             return false;
         }
