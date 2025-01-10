@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoginService.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20241005154619_BuildUsersTable")]
-    partial class BuildUsersTable
+    [Migration("20241108174239_UpdateUsersTable")]
+    partial class UpdateUsersTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,8 +47,16 @@ namespace LoginService.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastLogin")
-                        .IsRequired()
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Lastname")

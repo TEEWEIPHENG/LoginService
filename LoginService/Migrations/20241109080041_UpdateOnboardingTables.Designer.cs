@@ -4,6 +4,7 @@ using LoginService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoginService.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20241109080041_UpdateOnboardingTables")]
+    partial class UpdateOnboardingTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,38 +25,7 @@ namespace LoginService.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("LoginService.Data.Repositories.MfaRepository", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreateAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IsValid")
-                        .HasColumnType("int");
-
-                    b.Property<string>("OTP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReferenceNo")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MFA");
-                });
-
-            modelBuilder.Entity("LoginService.Data.Repositories.OnboardingLogRepository", b =>
+            modelBuilder.Entity("LoginService.Models.OnboardingLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,7 +68,7 @@ namespace LoginService.Migrations
                     b.ToTable("OnboardingLogs");
                 });
 
-            modelBuilder.Entity("LoginService.Data.Repositories.OnboardingStatusRepository", b =>
+            modelBuilder.Entity("LoginService.Models.OnboardingStatus", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,7 +82,7 @@ namespace LoginService.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OnboardingStatusRepository");
+                    b.ToTable("OnboardingStatus");
 
                     b.HasData(
                         new
@@ -135,7 +107,7 @@ namespace LoginService.Migrations
                         });
                 });
 
-            modelBuilder.Entity("LoginService.Data.Repositories.RoleRepository", b =>
+            modelBuilder.Entity("LoginService.Models.Role", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -166,7 +138,7 @@ namespace LoginService.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("LoginService.Data.Repositories.UserRepository", b =>
+            modelBuilder.Entity("LoginService.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

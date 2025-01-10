@@ -1,5 +1,8 @@
 using LoginService.Models;
+using LoginService.Services;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace LoginService.Controllers
 {
@@ -7,54 +10,59 @@ namespace LoginService.Controllers
     [Route("api/[controller]")]
     public class LoginController : ControllerBase
     {
+        private readonly IUserService _userService;
         private readonly ILogger<LoginController> _logger;
-        private static readonly List<string> Users = new()
-        {
-            "John Doe", "Jane Smith", "Alex Johnson"
-        };
 
-        public LoginController(ILogger<LoginController> logger)
+        public LoginController(IUserService userService, ILogger<LoginController> logger)
         {
+            _userService = userService;
             _logger = logger;
         }
 
-        // GET: api/users
-        [HttpGet]
-        public ActionResult<IEnumerable<string>> GetUsers()
-        {
-            return Ok(Users);
-        }
-
-        // GET: api/users/2
-        [HttpGet("{id}")]
-        public ActionResult<string> GetUser(int id)
-        {
-            if (id < 0 || id >= Users.Count)
-                return NotFound("User not found");
-
-            return Ok(Users[id]);
-        }
-
-        // POST: api/users
         [HttpPost]
-        public ActionResult AddUser([FromBody] string name)
+        [Route("Process")]
+        public async Task<IActionResult> ProcessLogin([FromBody] LoginModel request)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest("Name cannot be empty");
+            var result = await _userService.LoginAsync(request.Username, request.Password);
 
-            Users.Add(name);
-            return Ok("User added successfully");
+            return Ok(result);
         }
 
-        // DELETE: api/users/2
-        [HttpDelete("{id}")]
-        public ActionResult DeleteUser(int id)
+        [HttpPost]
+        [Route("RequestOTP")]
+        public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
         {
-            if (id < 0 || id >= Users.Count)
-                return NotFound("User not found");
+            var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
 
-            Users.RemoveAt(id);
-            return Ok("User deleted successfully");
+            return Ok(result);
+        }
+        
+        [HttpPost]
+        [Route("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ResetPasswordModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _userService.ForgotPasswordAsync(request.newPassword.Trim(), request.confirmPassword.Trim(), request.otp.Trim(), request.referenceNo.Trim());
+
+            return result ? Ok("Activated Successful") : Ok("Activation Failure");
+        }
+
+        [HttpPost]
+        [Route("ResetUsername")]
+        public async Task<IActionResult> ResetUsername([FromBody] ResetUsernameModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _userService.ResetUsernameAsync(request.newUsername.Trim(), request.otp.Trim(), request.referenceNo.Trim());
+
+            return Ok(result);
         }
     }
 }

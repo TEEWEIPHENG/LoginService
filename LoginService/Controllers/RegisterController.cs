@@ -1,10 +1,6 @@
 ﻿using LoginService.Models;
-using LoginService.Models.DTOs;
-using LoginService.Models.Entities;
 using LoginService.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LoginService.Controllers
 {
@@ -21,24 +17,41 @@ namespace LoginService.Controllers
             _logger = logger;
         }
 
-        // POST: api/register/process
         [HttpPost]
-        [Route("process")]
-        public async Task<IActionResult> ProcessRegistration([FromBody] RegisterDTO registerDto)
+        [Route("Process")]
+        public async Task<IActionResult> ProcessRegistration([FromBody] RegisterModel registerDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _userService.RegisterUserAsync(registerDto);
+            var result = await _userService.RegisterAsync(registerDto);
+            
+            return Ok(result.GetDescription());
+        }
 
-            if (!result)
+        [HttpPost]
+        [Route("RequestOTP")]
+        public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
+        {
+            var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
+
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [Route("Activate")]
+        public async Task<IActionResult> ActivateUser([FromBody] MfaModel request)
+        {
+            if (!ModelState.IsValid)
             {
-                return BadRequest("Registration failed. Email or Username already exists.");
+                return BadRequest(ModelState);
             }
 
-            return Ok("User registered successfully.");
+            var result = await _userService.ActivationAsync(request.otp, request.referenceNo);
+
+            return result ? Ok("Activated Successful") : Ok("Activation Failure");
         }
     }
 }
