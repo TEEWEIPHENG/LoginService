@@ -33,6 +33,9 @@ jobs:
        - name: Publish
          run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
        - name: Deploy to IIS
-         run: |   
-          Copy-Item .\publish\* C:\Deployment\LoginService -Recurse -Force
+         run: |
+          # Clear the target directory
+          Remove-Item -Path "C:\Deployment\LoginService\*" -Recurse -Force -ErrorAction Stop
+          # Copy new files to the target directory
+          Copy-Item -Path ".\publish\*" -Destination "C:\Deployment\LoginService" -Recurse -Force
           
