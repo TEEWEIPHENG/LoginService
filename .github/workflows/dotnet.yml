@@ -26,10 +26,16 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: Publish Application
-      run: |
-        dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
-    - name: Deploy to IIS
-      run: |
-        rm -r C:\Deployment\LoginService
-        xcopy /s /y .\publish\* C:\Deployment\LoginService
+  publish:
+     needs: build
+     runs-on: self-hosted
+     steps:
+       - name: Publish
+         run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+       - name: Deploy to IIS
+         run: |
+          # Clear the target directory
+          Remove-Item -Path "C:\Deployment\LoginService\*" -Recurse -Force -ErrorAction Stop
+          # Copy new files to the target directory
+          Copy-Item -Path ".\publish\*" -Destination "C:\Deployment\LoginService" -Recurse -Force
+          
