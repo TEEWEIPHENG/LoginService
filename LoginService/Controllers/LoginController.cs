@@ -24,7 +24,7 @@ namespace LoginService.Controllers
         public async Task<IActionResult> Ping()
         {
 
-            return Ok();
+            return Ok(true);
         }
 
         [HttpPost]
