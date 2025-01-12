@@ -26,3 +26,8 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+    - name: Publish Application
+      run: |
+        dotnet publish ./LoginService.sln --configuration Release --output ./publish
+    - name: Deploy to IIS
+      run: xcopy /s /y .\publish\* C:\Deployment\LoginService
