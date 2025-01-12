@@ -19,6 +19,14 @@ namespace LoginService.Controllers
             _logger = logger;
         }
 
+        [HttpGet]
+        [Route("Ping")]
+        public async Task<IActionResult> Ping()
+        {
+
+            return Ok();
+        }
+
         [HttpPost]
         [Route("Process")]
         public async Task<IActionResult> ProcessLogin([FromBody] LoginModel request)
