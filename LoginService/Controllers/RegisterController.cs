@@ -21,7 +21,6 @@ namespace LoginService.Controllers
         [Route("Ping")]
         public async Task<IActionResult> Ping()
         {
-
             return Ok(true);
         }
 
