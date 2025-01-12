@@ -33,30 +33,6 @@ jobs:
        - name: Publish
          run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
        - name: Deploy to IIS
-         run: |
-          if ((Get-WebSiteState -Name LoginService).Value -eq "Started")
-          {
-              Stop-WebSite -Name LoginService
-              echo "Stopped Website LoginService"
-          }
-          if ((Get-WebAppPoolState -Name LoginService).Value -eq "Started")
-          {
-              Stop-WebAppPool -Name LoginService
-              echo "Stopped Application Pool LoginService"
-          }
-          
-          Start-Sleep -s 15        
+         run: |   
           Copy-Item .\publish\* C:\Deployment\LoginService -Recurse -Force
           
-          if ((Get-WebSiteState -Name LoginService).Value -eq "Stopped")
-          {
-              Start-WebSite -Name LoginService
-              echo "Started Website LoginService"
-          }
-          if ((Get-WebAppPoolState -Name LoginService).Value -eq "Stopped")
-          {
-              Start-WebAppPool -Name LoginService
-              echo "Started Application Pool LoginService"
-          }
-          
-            if ($lastexitcode -lt 8) { $global:lastexitcode = 0 }
