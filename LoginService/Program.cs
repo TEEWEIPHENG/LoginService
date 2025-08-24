@@ -1,5 +1,7 @@
 using LoginService.Data;
+using LoginService.Data.Entities;
 using LoginService.Data.Repositories;
+using LoginService.Helpers;
 using LoginService.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,17 +13,17 @@ builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("staging"), sqlServerOptions => sqlServerOptions.EnableRetryOnFailure())
 );
 
-builder.Services.AddScoped<IUserService, UserService>();  // Add the UserService
-builder.Services.AddScoped<IPasswordHasher<UserRepository>, PasswordHasher<UserRepository>>();  // Add password hasher
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserHelper, UserHelper>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

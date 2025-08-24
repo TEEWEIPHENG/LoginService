@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using LoginService.Data.Repositories;
+using LoginService.Data.Entities;
 
 namespace LoginService.Data
 {
@@ -9,34 +9,23 @@ namespace LoginService.Data
         {
 
         }
-        public virtual DbSet<UserRepository> Users { get; set; }
-        public virtual DbSet<RoleRepository> Roles { get; set; }
-        public virtual DbSet<OnboardingLogRepository> OnboardingLogs { get; set; }
-        public virtual DbSet<MfaRepository> MFA { get; set; }
+        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Role> Roles { get; set; }
+        public virtual DbSet<MFA> MFA { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<UserRepository>(entity =>
+            modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(k => k.Id);
             });
-            modelBuilder.Entity<RoleRepository>(entity =>
+            modelBuilder.Entity<Role>(entity =>
             {
                 entity.HasKey(k => k.Id);
             });
-            modelBuilder.Entity<OnboardingLogRepository>(entity =>
+            modelBuilder.Entity<MFA>(entity =>
             {
                 entity.HasKey(k => k.Id);
             });
-            modelBuilder.Entity<MfaRepository>(entity =>
-            {
-                entity.HasKey(k => k.Id);
-            });
-            modelBuilder.Entity<OnboardingStatusRepository>().HasData(
-                new OnboardingStatusRepository { Id = 1, Status = "Success" },
-                new OnboardingStatusRepository { Id = 2, Status = "Fail" },
-                new OnboardingStatusRepository { Id = 3, Status = "Account Existed" },
-                new OnboardingStatusRepository { Id = 4, Status = "Error" }
-            );
 
             OnModelCreatingPartial(modelBuilder);
         }

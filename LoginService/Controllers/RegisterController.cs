@@ -1,4 +1,5 @@
 ﻿using LoginService.Models;
+using LoginService.Models.Enum;
 using LoginService.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +20,7 @@ namespace LoginService.Controllers
 
         [HttpGet]
         [Route("Ping")]
-        public async Task<IActionResult> Ping()
+        public IActionResult Ping()
         {
             return Ok(true);
         }
@@ -34,8 +35,8 @@ namespace LoginService.Controllers
             }
 
             var result = await _userService.RegisterAsync(registerDto);
-            
-            return Ok(result.GetDescription());
+
+            return Ok(result);
         }
 
         [HttpPost]

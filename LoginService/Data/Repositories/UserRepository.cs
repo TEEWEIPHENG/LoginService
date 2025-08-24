@@ -1,55 +1,44 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using LoginService.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace LoginService.Data.Repositories
 {
-    public class UserRepository
+    public class UserRepository : IUserRepository
     {
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        [MaxLength(255)]
-        public string UserId { get; set; } = string.Empty;
+        private readonly DataContext _context;
 
-        [MaxLength(50)]
-        public string Lastname { get; set; } = string.Empty;
+        public UserRepository(DataContext context)
+        {
+            _context = context;
+        }
 
-        [MaxLength(50)]
-        public string Firstname { get; set; } = string.Empty;
+        public async Task AddAsync(User user)
+        {
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+        }
 
-        [Required]
-        [MaxLength(50)]
-        public string Username { get; set; } = string.Empty;
+        public async Task<User?> GetByUsernameAsync(string username)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
 
-        [Required]
-        [MaxLength(255)]
-        public string Password { get; set; } = string.Empty;
+        public async Task<User?> GetByEmailAsync(string email)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
 
-        [Required]
-        [MaxLength(255)]
-        public string RoleId { get; set; } = string.Empty;
+        public async Task<User?> GetByMobileNoAsync(string mobileNo)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.MobileNo == mobileNo);
+        }
 
-        [Required]
-        [MaxLength(100)]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(100)]
-        public string MobileNo { get; set; } = string.Empty;
-
-        public DateTime? LastLogin { get; set; }
-
-        [Required]
-        public DateTime? CreatedAt { get; set; }
-
-        [Required]
-        public DateTime? UpdatedAt { get; set; }
-        [Required]
-        public bool IsValid { get; set; } = false;
-        [Required]
-        public bool IsEnabled { get; set; } = true;
-        [Required]
-        public bool IsLocked { get; set; } = false;
-        [Required]
-        public int WrongPasswordCount { get; set; } = 0;
+        public async Task<bool> ExistsAsync(string username, string mobileNo, string email)
+        {
+            return await _context.Users.AnyAsync(u =>
+                u.Username == username ||
+                u.MobileNo == mobileNo ||
+                u.Email == email);
+        }
     }
 }

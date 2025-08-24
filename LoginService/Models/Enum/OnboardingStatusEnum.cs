@@ -14,6 +14,9 @@ namespace LoginService.Models.Enum
         AccountExisted = 3,
 
         [Description("Error")]
-        Error = 4
+        Error = 4,
+
+        [Description("Invalid Info")]
+        InvalidInfo = 5
     }
 }
