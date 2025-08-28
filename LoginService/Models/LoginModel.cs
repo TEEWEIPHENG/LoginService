@@ -5,8 +5,9 @@
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
-    public class LoginProcessResponse : CommonApiResponse
+    public class ProcessLoginResponse : CommonApiResponse
     {
-
+        public string sessionToken { get; set; }
+        public DateTime expiresAt { get; set; }
     }
 }

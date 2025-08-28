@@ -1,32 +1,38 @@
-﻿using LoginService.Data.Entities;
+﻿using Azure.Core;
+using LoginService.Data.Entities;
 using LoginService.Data.Repositories;
 using LoginService.Helpers;
 using LoginService.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 
 namespace LoginService.Services
 {
     public class UserService : IUserService
     {
+        private readonly ISessionRepository _sessionRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IUserHelper _userHelper;
+        private readonly IRoleRepository _roleRepository;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger, IUserHelper userHelper)
+        public UserService(ISessionRepository sessionRepository, IUserRepository userRepository, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger, IRoleRepository roleRepository)
         {
+            _sessionRepository = sessionRepository;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _logger = logger;
-            _userHelper = userHelper;
+            _roleRepository = roleRepository;
         }
 
         public async Task<ProcessRegisterResponse> RegisterAsync(RegisterModel request)
         {
             try
             {
-                string msg = "RegisterUser called. Request: ";
-                _logger.LogInformation(msg, request);
+                _logger.LogInformation("========== Register Start ==========");
+                _logger.LogInformation("Username: {Username}, Lastname: {Lastname}, Firstname: {Firstname}, Mobile: {Mobile}, Email: {Email}", 
+                    request.Username, request.Lastname, request.Firstname, request.MobileNo, request.Email);
+
                 if (request == null)
                 {
                     return new ProcessRegisterResponse
@@ -54,8 +60,9 @@ namespace LoginService.Services
                     Username = request.Username.Trim(),
                     Email = request.Email.Trim(),
                     MobileNo = request.MobileNo.Trim(),
-                    RoleId = request.RoleId.Trim(),
-                    Password = _passwordHasher.HashPassword(new User(), request.Password)
+                    RoleId = string.IsNullOrWhiteSpace(request.Role) ? await _roleRepository.GetRoleIdByNameAsync("User") : await _roleRepository.GetRoleIdByNameAsync(request.Role),
+                    Password = _passwordHasher.HashPassword(new User(), request.Password),
+                    IsValid = true,
                 };
 
                 await _userRepository.AddAsync(user);
@@ -77,44 +84,69 @@ namespace LoginService.Services
             }
             finally
             {
-                //insert log for registration
+                _logger.LogInformation("========== Register End ==========");
             }
         }
 
-        public async Task<bool> LoginAsync(string usernameOrEmail, string password)
+        public async Task<ProcessLoginResponse> LoginAsync(string usernameOrEmail, string password, string ipAddress, string userAgent)
         {
+            _logger.LogInformation("========== Login Start ==========");
+            _logger.LogInformation("Username OR Email: {usernameOrEmail}", usernameOrEmail);
+
+            ProcessLoginResponse response = new ProcessLoginResponse()
+            {
+                success = false,
+                message = "Login failed. Incorrect username or password."
+            };
+
             try
             {
-                // Normalize input
-                // Check if username and password matched.
-                //if correct, return true
-                //if false, increment wrong password count
-                //var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == usernameOrEmail.Trim().ToLower() || u.Email.ToLower() == usernameOrEmail.Trim().ToLower());
+                var user = await _userRepository.GetByUsernameOrEmailAsync(usernameOrEmail);
 
-                //if (user != null && user.IsValid && user.IsEnabled && !user.IsLocked)
-                //{
-                //    var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
-                //    if (verificationResult == PasswordVerificationResult.Success)
-                //    {
-                //        // Reset WrongPasswordCount on successful login
-                //        user.WrongPasswordCount = 0;
-                //        await _context.SaveChangesAsync();
-                //        return true;
-                //    }
-                //    else
-                //    {
-                //        user.WrongPasswordCount++;
-                         
-                //        const int maxAttempts = 3;
-                //        if (user.WrongPasswordCount >= maxAttempts)
-                //        {
-                //            user.IsLocked = true;
-                //        }
+                if (user != null && user.IsValid && user.IsEnabled && !user.IsLocked)
+                {
+                    // Verify the password
+                    var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+                    if (verificationResult == PasswordVerificationResult.Success)
+                    {
+                        // Reset WrongPasswordCount on successful login
+                        user.WrongPasswordCount = 0;
+                        await _userRepository.UpdateAsync(user);
 
-                //        await _context.SaveChangesAsync();
-                //        return false;
-                //    }
-                //}
+                        //generate session token
+                        var token = SessionHelper.GenerateToken(32);
+                        var hash = SessionHelper.HashToken(token);
+
+                        //store inside db
+                        var session = new UserSession
+                        {
+                            SessionHash = hash,
+                            UserId = user.UserId,
+                            CreatedAt = DateTime.UtcNow,
+                            ExpiresAt = DateTime.UtcNow.AddMinutes(30),
+                            IpAddress = ipAddress,
+                            UserAgent = userAgent
+                        };
+                        await _sessionRepository.CreateAsync(session);
+
+                        response.sessionToken = token;
+                        response.expiresAt = session.ExpiresAt;
+                        response.success = true;
+                        response.message = "Login successful.";
+                    }
+                    else
+                    {
+                        user.WrongPasswordCount++;
+
+                        const int maxAttempts = 3;
+                        if (user.WrongPasswordCount >= maxAttempts)
+                        {
+                            user.IsLocked = true;
+                        }
+
+                        await _userRepository.UpdateAsync(user);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -122,10 +154,10 @@ namespace LoginService.Services
             }
             finally
             {
-                //insert log for login
+                _logger.LogInformation("========== Login End ==========");
             }
 
-            return false;
+            return response;
         }
         public async Task<RequestOTPResponse> RequestOTPAsync(string username, string mobileNo)
         {
@@ -252,6 +284,43 @@ namespace LoginService.Services
                 _logger.LogError("ForgotPassword Error: " + ex.Message);
             }
             return false;
+        }
+
+        public async Task<bool> SessionAuthentication(string token)
+        {
+            _logger.LogInformation("========== SessionAuthentication Start ==========");
+            try
+            {
+                var hashToken = SessionHelper.HashToken(token);
+
+                var session = await _sessionRepository.GetByHashAsync(hashToken);
+
+                if (session != null)
+                    return true;
+                else
+                    return false;
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return false;
+            }
+        }
+
+        public async Task<bool> Logout(string token)
+        {
+            _logger.LogInformation("========== Logout Start ==========");
+            try
+            {
+                var hashToken = SessionHelper.HashToken(token);
+                var session = await _sessionRepository.GetByHashAsync(hashToken);
+                await _sessionRepository.RevokeAsync(session);
+                return true;
+            }catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return false;
+            }
         }
     }
 }

@@ -1,8 +1,12 @@
+using LoginService.Data.Entities;
+using LoginService.Helpers;
 using LoginService.Models;
 using LoginService.Services;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace LoginService.Controllers
 {
@@ -30,46 +34,92 @@ namespace LoginService.Controllers
         [Route("Process")]
         public async Task<IActionResult> ProcessLogin([FromBody] LoginModel request)
         {
-            var result = await _userService.LoginAsync(request.Username, request.Password);
 
-            return Ok(result);
-        }
+            string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string userAgent = Request.Headers["User-Agent"].ToString();
 
-        [HttpPost]
-        [Route("RequestOTP")]
-        public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
-        {
-            var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
+            var result = await _userService.LoginAsync(request.Username, request.Password, ipAddress, userAgent);
 
-            return Ok(result);
-        }
-        
-        [HttpPost]
-        [Route("ForgotPassword")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ResetPasswordModel request)
-        {
-            if (!ModelState.IsValid)
+            if (result.success)
             {
-                return BadRequest(ModelState);
+
+                Response.Cookies.Append("auth_session", result.sessionToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false, //https only
+                    SameSite = SameSiteMode.None,
+                    Domain = "localhost:5000",          // so cookie works across services
+                    Expires = result.expiresAt,
+                });
+
             }
-
-            var result = await _userService.ForgotPasswordAsync(request.newPassword.Trim(), request.confirmPassword.Trim(), request.otp.Trim(), request.referenceNo.Trim());
-
-            return result ? Ok("Activated Successful") : Ok("Activation Failure");
-        }
-
-        [HttpPost]
-        [Route("ResetUsername")]
-        public async Task<IActionResult> ResetUsername([FromBody] ResetUsernameModel request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _userService.ResetUsernameAsync(request.newUsername.Trim(), request.otp.Trim(), request.referenceNo.Trim());
-
             return Ok(result);
         }
+
+        [HttpPost("Logout")]
+        public async Task<IActionResult> LogoutAsync([FromHeader(Name = "Authorization")] string? authHeader)
+        {
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                return Unauthorized(false);
+
+            var token = authHeader.Substring("Bearer ".Length);
+            Response.Cookies.Delete("auth_session");
+            var ok = await _userService.Logout(token);
+            return Ok(ok);
+        }
+
+        [HttpGet("Session")]
+        public async Task<IActionResult> Session([FromHeader(Name = "Authorization")] string? authHeader)
+        {
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                return Unauthorized(false);
+
+            var token = authHeader.Substring("Bearer ".Length);
+
+            // TODO: validate token (JWT or lookup in DB/Redis)
+            bool isValid = await _userService.SessionAuthentication(token);
+
+            if (!isValid)
+                return Unauthorized(false);
+
+            return Ok(true);
+        }
+
+        //[HttpPost]
+        //[Route("RequestOTP")]
+        //public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
+        //{
+        //    var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
+
+        //    return Ok(result);
+        //}
+
+        //[HttpPost]
+        //[Route("ForgotPassword")]
+        //public async Task<IActionResult> ForgotPassword([FromBody] ResetPasswordModel request)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    var result = await _userService.ForgotPasswordAsync(request.newPassword.Trim(), request.confirmPassword.Trim(), request.otp.Trim(), request.referenceNo.Trim());
+
+        //    return result ? Ok("Activated Successful") : Ok("Activation Failure");
+        //}
+
+        //[HttpPost]
+        //[Route("ResetUsername")]
+        //public async Task<IActionResult> ResetUsername([FromBody] ResetUsernameModel request)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    var result = await _userService.ResetUsernameAsync(request.newUsername.Trim(), request.otp.Trim(), request.referenceNo.Trim());
+
+        //    return Ok(result);
+        //}
     }
 }

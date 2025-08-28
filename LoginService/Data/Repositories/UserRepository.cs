@@ -20,17 +20,22 @@ namespace LoginService.Data.Repositories
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            return await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.Trim().ToLower());
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.Trim().ToLower());
         }
 
         public async Task<User?> GetByMobileNoAsync(string mobileNo)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.MobileNo == mobileNo);
+        }
+
+        public async Task<User?> GetByUsernameOrEmailAsync(string input)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == input.Trim().ToLower() || u.Email.ToLower() == input.Trim().ToLower());
         }
 
         public async Task<bool> ExistsAsync(string username, string mobileNo, string email)
@@ -39,6 +44,12 @@ namespace LoginService.Data.Repositories
                 u.Username == username ||
                 u.MobileNo == mobileNo ||
                 u.Email == email);
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
         }
     }
 }

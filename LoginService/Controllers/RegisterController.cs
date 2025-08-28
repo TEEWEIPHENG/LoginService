@@ -39,27 +39,27 @@ namespace LoginService.Controllers
             return Ok(result);
         }
 
-        [HttpPost]
-        [Route("RequestOTP")]
-        public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
-        {
-            var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
+        //[HttpPost]
+        //[Route("RequestOTP")]
+        //public async Task<IActionResult> RequestOTP([FromBody] RequestOTPModel request)
+        //{
+        //    var result = await _userService.RequestOTPAsync(request.username, request.mobileNo);
 
-            return Ok(result);
-        }
+        //    return Ok(result);
+        //}
 
-        [HttpPost]
-        [Route("Activate")]
-        public async Task<IActionResult> ActivateUser([FromBody] MfaModel request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        //[HttpPost]
+        //[Route("Activate")]
+        //public async Task<IActionResult> ActivateUser([FromBody] MfaModel request)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
 
-            var result = await _userService.ActivationAsync(request.otp, request.referenceNo);
+        //    var result = await _userService.ActivationAsync(request.otp, request.referenceNo);
 
-            return result ? Ok("Activated Successful") : Ok("Activation Failure");
-        }
+        //    return result ? Ok("Activated Successful") : Ok("Activation Failure");
+        //}
     }
 }
