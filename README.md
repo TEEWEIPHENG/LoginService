@@ -1,14 +1,23 @@
 # Cyber TIP Login Service
 
-## Login API
-- Login
-- Request OTP
+## Functionalities
 
-## Register API
-- Create account
-- Activation
-- Request OTP
+### Login API
+- Authenticate and create session
 
-## CI/CD
-- Setup GitHub Actions
+### Register API
+- Create user account
+
+### Session API
+- Validate session
+- Renew session
+
+## Deployment
+- Setup CI/CD with GitHub Actions
 - Deploy to IIS
+
+## Structure
+- Controller - Entry points collection
+- Service - Business logic
+- Repository - Interact with DB
+- Model - Classes for Controller and Services
