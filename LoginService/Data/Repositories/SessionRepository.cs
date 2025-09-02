@@ -35,6 +35,12 @@ namespace LoginService.Data.Repositories
                 await _ctx.SaveChangesAsync();
             }
         }
+
+        public async Task UpdateAsync(UserSession session)
+        {
+            _ctx.UserSession.Update(session);
+            await _ctx.SaveChangesAsync();
+        }
     }
 
 }

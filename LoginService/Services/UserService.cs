@@ -123,7 +123,7 @@ namespace LoginService.Services
                             SessionHash = hash,
                             UserId = user.UserId,
                             CreatedAt = DateTime.UtcNow,
-                            ExpiresAt = DateTime.UtcNow.AddMinutes(30),
+                            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
                             IpAddress = ipAddress,
                             UserAgent = userAgent
                         };
@@ -284,27 +284,6 @@ namespace LoginService.Services
                 _logger.LogError("ForgotPassword Error: " + ex.Message);
             }
             return false;
-        }
-
-        public async Task<bool> SessionAuthentication(string token)
-        {
-            _logger.LogInformation("========== SessionAuthentication Start ==========");
-            try
-            {
-                var hashToken = SessionHelper.HashToken(token);
-
-                var session = await _sessionRepository.GetByHashAsync(hashToken);
-
-                if (session != null)
-                    return true;
-                else
-                    return false;
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return false;
-            }
         }
 
         public async Task<bool> Logout(string token)

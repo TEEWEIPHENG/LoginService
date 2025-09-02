@@ -8,6 +8,7 @@ namespace LoginService.Data.Repositories
         Task<UserSession?> GetByHashAsync(string sessionHash);
         Task RevokeAsync(UserSession session);
         Task CleanupExpiredAsync();
+        Task UpdateAsync(UserSession session);
     }
 
 }

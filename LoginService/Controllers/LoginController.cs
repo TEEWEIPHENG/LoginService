@@ -40,19 +40,17 @@ namespace LoginService.Controllers
 
             var result = await _userService.LoginAsync(request.Username, request.Password, ipAddress, userAgent);
 
-            if (result.success)
-            {
-
-                Response.Cookies.Append("auth_session", result.sessionToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = false, //https only
-                    SameSite = SameSiteMode.None,
-                    Domain = "localhost:5000",          // so cookie works across services
-                    Expires = result.expiresAt,
-                });
-
-            }
+            //if (result.success)
+            //{
+            //    Response.Cookies.Append("auth_session", result.sessionToken, new CookieOptions
+            //    {
+            //        HttpOnly = true,
+            //        Secure = false, //https only
+            //        SameSite = SameSiteMode.None,
+            //        Domain = "localhost:5000",          // so cookie works across services
+            //        Expires = result.expiresAt,
+            //    });
+            //}
             return Ok(result);
         }
 
@@ -66,23 +64,6 @@ namespace LoginService.Controllers
             Response.Cookies.Delete("auth_session");
             var ok = await _userService.Logout(token);
             return Ok(ok);
-        }
-
-        [HttpGet("Session")]
-        public async Task<IActionResult> Session([FromHeader(Name = "Authorization")] string? authHeader)
-        {
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                return Unauthorized(false);
-
-            var token = authHeader.Substring("Bearer ".Length);
-
-            // TODO: validate token (JWT or lookup in DB/Redis)
-            bool isValid = await _userService.SessionAuthentication(token);
-
-            if (!isValid)
-                return Unauthorized(false);
-
-            return Ok(true);
         }
 
         //[HttpPost]
