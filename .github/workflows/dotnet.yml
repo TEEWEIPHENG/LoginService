@@ -35,15 +35,16 @@ jobs:
       - name: Publish
         run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
 
-      - name: Stop IIS AppPool
+      - name: Stop Website
         run: |
           Import-Module WebAdministration
-          Stop-WebAppPool -Name "CyberTIPAppPoll"
+          Stop-Website -Name "LoginService"
+
       - name: Deploy to IIS
         run: |
           Remove-Item -Path "C:\Deployment\LoginService\*" -Recurse -Force -ErrorAction SilentlyContinue
           Copy-Item -Path ".\publish\*" -Destination "C:\Deployment\LoginService" -Recurse -Force
-      - name: Start IIS AppPool
+      - name: Start Website
         run: |
           Import-Module WebAdministration
-          Start-WebAppPool -Name "CyberTIPAppPoll"
+          Start-Website -Name "LoginService"
