@@ -26,16 +26,25 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+      
   publish:
-     needs: build
-     runs-on: self-hosted
-     steps:
-       - name: Publish
-         run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
-       - name: Deploy to IIS
-         run: |
-          # Clear the target directory
-          Remove-Item -Path "C:\Deployment\LoginService\*" -Recurse -Force -ErrorAction Stop
-          # Copy new files to the target directory
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish
+        run: dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+
+      - name: Stop Website
+        run: |
+          Import-Module WebAdministration
+          Stop-Website -Name "LoginService"
+
+      - name: Deploy to IIS
+        run: |
+          Remove-Item -Path "C:\Deployment\LoginService\*" -Recurse -Force -ErrorAction SilentlyContinue
           Copy-Item -Path ".\publish\*" -Destination "C:\Deployment\LoginService" -Recurse -Force
-          
+      - name: Start Website
+        run: |
+          Import-Module WebAdministration
+          Start-Website -Name "LoginService"
