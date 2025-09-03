@@ -38,7 +38,8 @@ jobs:
       - name: Stop Website
         run: |
           Import-Module WebAdministration
-          Stop-Website -Name "LoginService"
+          Stop-WebAppPool -Name "CyberTIPAppPoll"
+
 
       - name: Deploy to IIS
         run: |
@@ -47,4 +48,4 @@ jobs:
       - name: Start Website
         run: |
           Import-Module WebAdministration
-          Start-Website -Name "LoginService"
+          Start-WebAppPool -Name "CyberTIPAppPoll"
