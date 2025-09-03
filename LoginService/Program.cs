@@ -25,20 +25,19 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-//builder.Services.AddAuthentication("AuthCookie")
-//    .AddCookie("AuthCookie", options =>
-//    {
-//        options.Cookie.Name = "auth_session";   // Name of your cookie
-//        options.Cookie.HttpOnly = true;         // Prevent JS access
-//        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
-//        options.Cookie.SameSite = SameSiteMode.Strict; // Prevent CSRF
-//        options.LoginPath = "/Login";           // Redirect if not logged in
-//        options.LogoutPath = "/Logout";
-//        options.ExpireTimeSpan = TimeSpan.FromHours(1); // Lifetime
-//        options.SlidingExpiration = true;       // Extend if active
-//    });
 builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAPIGateway",
+        policy =>
+        {
+            policy.WithOrigins("http://api.cybertip.com/", "http://localhost:5000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
 
+        });
+});
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -51,6 +50,7 @@ app.UseHttpsRedirection();
 
 //app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors("AllowAPIGateway");
 
 app.MapControllers();
 
