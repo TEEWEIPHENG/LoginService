@@ -1,5 +1,4 @@
 ﻿using LoginService.Models;
-using LoginService.Models.Enum;
 using LoginService.Services;
 using Microsoft.AspNetCore.Mvc;
 

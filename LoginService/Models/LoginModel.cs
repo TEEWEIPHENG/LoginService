@@ -8,6 +8,5 @@
     public class ProcessLoginResponse : CommonApiResponse
     {
         public string sessionToken { get; set; }
-        public DateTime expiresAt { get; set; }
     }
 }

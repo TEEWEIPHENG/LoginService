@@ -6,6 +6,7 @@ namespace LoginService.Data.Repositories
     {
         Task AddAsync(User user);
         Task UpdateAsync(User user);
+        Task<User?> GetByUserIdAsync(string userId);
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByMobileNoAsync(string mobileNo);

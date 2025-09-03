@@ -1,46 +1,49 @@
 ﻿using LoginService.Data.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace LoginService.Data.Repositories
 {
     public class SessionRepository : ISessionRepository
     {
-        private readonly DataContext _ctx;
-        public SessionRepository(DataContext ctx) => _ctx = ctx;
+        private readonly DataContext _context;
 
-        public async Task CreateAsync(UserSession session)
+        public SessionRepository(DataContext context)
         {
-            await _ctx.UserSession.AddAsync(session);
-            await _ctx.SaveChangesAsync();
+            _context = context;
         }
 
-        public Task<UserSession?> GetByHashAsync(string sessionHash)
+        public async Task AddAsync(Session session)
         {
-            return _ctx.UserSession.FirstOrDefaultAsync(s => s.SessionHash == sessionHash && !s.IsRevoked && s.ExpiresAt > DateTime.UtcNow);
+            await _context.AddAsync(session);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task RevokeAsync(UserSession session)
+        public Task<Session?> GetByTokenAsync(string token)
         {
-            session.IsRevoked = true;
-            _ctx.UserSession.Update(session);
-            await _ctx.SaveChangesAsync();
+            throw new NotImplementedException();
         }
 
-        public async Task CleanupExpiredAsync()
+        public Task UpdateAsync(Session session)
         {
-            var expired = await _ctx.UserSession.Where(s => s.ExpiresAt <= DateTime.UtcNow || s.IsRevoked).ToListAsync();
-            if (expired.Any())
-            {
-                _ctx.UserSession.RemoveRange(expired);
-                await _ctx.SaveChangesAsync();
-            }
+            throw new NotImplementedException();
         }
 
-        public async Task UpdateAsync(UserSession session)
+        public Task<Session?> GetByUserIdAsync(string userId)
         {
-            _ctx.UserSession.Update(session);
-            await _ctx.SaveChangesAsync();
+            throw new NotImplementedException();
+        }
+
+        public async Task<bool> InvalidateSessionAsync(string token)
+        {
+            var session = _context.Sessions.FirstOrDefault(s => s.Token == token);
+            session.IsActive = false;
+            _context.Sessions.Update(session);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public Task RefreshTokenAsync(string token, DateTime newExpireAt)
+        {
+            throw new NotImplementedException();
         }
     }
-
 }

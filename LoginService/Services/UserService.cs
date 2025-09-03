@@ -5,24 +5,31 @@ using LoginService.Helpers;
 using LoginService.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace LoginService.Services
 {
     public class UserService : IUserService
     {
-        private readonly ISessionRepository _sessionRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IRoleRepository _roleRepository;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<UserService> _logger;
+        private readonly IConfiguration _config;
 
-        public UserService(ISessionRepository sessionRepository, IUserRepository userRepository, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger, IRoleRepository roleRepository)
+        private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly ISessionRepository _sessionRepository;
+
+        public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger, IRoleRepository roleRepository, IConfiguration config, ISessionRepository sessionRepository)
         {
-            _sessionRepository = sessionRepository;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _logger = logger;
             _roleRepository = roleRepository;
+            _config = config;
+            _sessionRepository = sessionRepository;
         }
 
         public async Task<ProcessRegisterResponse> RegisterAsync(RegisterModel request)
@@ -30,7 +37,7 @@ namespace LoginService.Services
             try
             {
                 _logger.LogInformation("========== Register Start ==========");
-                _logger.LogInformation("Username: {Username}, Lastname: {Lastname}, Firstname: {Firstname}, Mobile: {Mobile}, Email: {Email}", 
+                _logger.LogInformation("Username: {Username}, Lastname: {Lastname}, Firstname: {Firstname}, Mobile: {Mobile}, Email: {Email}",
                     request.Username, request.Lastname, request.Firstname, request.MobileNo, request.Email);
 
                 if (request == null)
@@ -88,7 +95,7 @@ namespace LoginService.Services
             }
         }
 
-        public async Task<ProcessLoginResponse> LoginAsync(string usernameOrEmail, string password, string ipAddress, string userAgent)
+        public async Task<ProcessLoginResponse> LoginAsync(string usernameOrEmail, string password)
         {
             _logger.LogInformation("========== Login Start ==========");
             _logger.LogInformation("Username OR Email: {usernameOrEmail}", usernameOrEmail);
@@ -113,24 +120,9 @@ namespace LoginService.Services
                         user.WrongPasswordCount = 0;
                         await _userRepository.UpdateAsync(user);
 
-                        //generate session token
-                        var token = SessionHelper.GenerateToken(32);
-                        var hash = SessionHelper.HashToken(token);
+                        var tokenString = await GenerateJwtTokenAsync(user);
 
-                        //store inside db
-                        var session = new UserSession
-                        {
-                            SessionHash = hash,
-                            UserId = user.UserId,
-                            CreatedAt = DateTime.UtcNow,
-                            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
-                            IpAddress = ipAddress,
-                            UserAgent = userAgent
-                        };
-                        await _sessionRepository.CreateAsync(session);
-
-                        response.sessionToken = token;
-                        response.expiresAt = session.ExpiresAt;
+                        response.sessionToken = tokenString;
                         response.success = true;
                         response.message = "Login successful.";
                     }
@@ -159,147 +151,68 @@ namespace LoginService.Services
 
             return response;
         }
-        public async Task<RequestOTPResponse> RequestOTPAsync(string username, string mobileNo)
-        {
-            RequestOTPResponse response = new RequestOTPResponse();
-            try
-            {
-                _logger.LogInformation($"RequestOTP: {username}, {mobileNo}");
-                //var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.Equals(username.Trim()) && u.MobileNo.Equals(mobileNo.Trim()));
-                //if(user != null && user.IsEnabled)
-                //{
-                //    MfaRepository mFA = new()
-                //    {
-                //        OTP = OTPGenerator.GenerateOTP(),
-                //        ReferenceNo = OTPGenerator.GenerateReferenceNo(),
-                //        UserId = user.UserId,
-                //        CreateAt = DateTime.Now,
-                //    };
-
-                //    await _context.MFA.AddAsync(mFA);
-                //    await _context.SaveChangesAsync();
-
-                //    response.status = true;
-                //    response.referenceNo = mFA.ReferenceNo;
-
-                //    //send email or sms OTP
-                //}
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("RequestOTP Error: " + ex.Message);
-            }
-            finally {
-                //insert log for request OTP
-            }
-            return response;
-        }
-
-        public async Task<bool> ActivationAsync(string otp, string referenceNo)
-        {
-            try
-            {
-                //var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
-                //if (response != null)
-                //{
-                //    var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == response.UserId);
-                //    if (user != null)
-                //        user.IsValid = true;
-                //    await _context.SaveChangesAsync();
-                //    return true;
-                //}
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Activation Error: " + ex.Message);
-            }
-            return false;
-        }
-
-        public async Task<string> ValidateForgotPasswordAsync(string otp, string referenceNo)
-        {
-            try
-            {
-                //var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
-                //if(response != null)
-                //{
-                //    //check again user 
-                //    return response.UserId;
-                //}
-                _logger.LogInformation($"ValidateForgotPassword Success: {referenceNo}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("ForgotPassword Error: " + ex.Message);
-            }
-            return null;
-        }
-        public async Task<bool> ForgotPasswordAsync(string newPassword, string confirmPassword, string otp, string referenceNo)
-        {
-            try
-            {
-                //validate OTP
-                //var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
-                //if (response != null)
-                //{
-                //    var user = await _context.Users.Where(u => u.UserId == response.UserId).FirstOrDefaultAsync();
-                //    if (user!= null && newPassword.Trim() == confirmPassword.Trim())
-                //    {
-                //        user.Password = _passwordHasher.HashPassword(user, newPassword.Trim());
-                //        //update password
-                //        await _context.SaveChangesAsync();
-                //        return true;
-                //    }
-                //}
-                _logger.LogInformation($"ForgotPassword Success.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("ForgotPassword Error: " + ex.Message);
-            }
-            return false;
-        }
-        public async Task<bool> ResetUsernameAsync(string newUsername, string otp, string referenceNo)
-        {
-            try
-            {
-                //validate OTP
-                //var response = await _otpValidator.ValidateOTPAsync(otp.Trim(), referenceNo.Trim());
-                //if (response != null)
-                //{
-                //    var user = await _context.Users.Where(u => u.UserId == response.UserId).FirstOrDefaultAsync();
-                //    var isValidUsername = await _userDetailValidator.ValidateUsername(newUsername);
-                //    if (user != null && isValidUsername)
-                //    {
-                //        user.Username = newUsername.Trim();
-                //        //update password
-                //        await _context.SaveChangesAsync();
-                //        return true;
-                //    }
-                //}
-                _logger.LogInformation($"ForgotPassword Success.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("ForgotPassword Error: " + ex.Message);
-            }
-            return false;
-        }
 
         public async Task<bool> Logout(string token)
         {
             _logger.LogInformation("========== Logout Start ==========");
             try
             {
-                var hashToken = SessionHelper.HashToken(token);
-                var session = await _sessionRepository.GetByHashAsync(hashToken);
-                await _sessionRepository.RevokeAsync(session);
-                return true;
-            }catch(Exception ex)
+                return await _sessionRepository.InvalidateSessionAsync(token);
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
                 return false;
             }
+        }
+
+        public async Task<string> RefreshJwtToken(string token)
+        {
+            _logger.LogInformation("========== Refresh Token Start ==========");
+            var session = _sessionRepository.GetByTokenAsync(token);
+            var user = await _userRepository.GetByUserIdAsync(session.Result.UserId);
+
+            if (session != null && user != null)
+            {
+                return await GenerateJwtTokenAsync(user);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("Invalid session or user.");
+            }
+        }
+
+        private async Task<string> GenerateJwtTokenAsync(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_config["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
+            var expireMinutes = int.Parse(_config["Jwt:ExpireMinutes"] ?? "60");
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId),
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Role, user.RoleId)
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(expireMinutes),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            Session session = new Session
+            {
+                SessionId = Guid.NewGuid().ToString(),
+                UserId = user.UserId,
+                Token = tokenString,
+                CreatedAt = DateTime.UtcNow,
+                ExpireAt = DateTime.UtcNow.AddMinutes(expireMinutes),
+                IsActive = true
+            };
+            await _sessionRepository.AddAsync(session);
+
+            return tokenString;
         }
     }
 }

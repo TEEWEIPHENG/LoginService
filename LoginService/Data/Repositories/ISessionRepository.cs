@@ -4,11 +4,11 @@ namespace LoginService.Data.Repositories
 {
     public interface ISessionRepository
     {
-        Task CreateAsync(UserSession session);
-        Task<UserSession?> GetByHashAsync(string sessionHash);
-        Task RevokeAsync(UserSession session);
-        Task CleanupExpiredAsync();
-        Task UpdateAsync(UserSession session);
+        public Task<Session?> GetByTokenAsync(string token);
+        public Task AddAsync(Session session);
+        public Task UpdateAsync(Session session);
+        public Task<Session?> GetByUserIdAsync(string userId);
+        public Task<bool> InvalidateSessionAsync(string userId);
+        public Task RefreshTokenAsync(string token, DateTime newExpireAt);
     }
-
 }
