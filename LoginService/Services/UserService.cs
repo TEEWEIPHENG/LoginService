@@ -184,24 +184,31 @@ namespace LoginService.Services
 
         private async Task<string> GenerateJwtTokenAsync(User user)
         {
+            var jwtSection = _config.GetSection("Jwt");
+            var key = Encoding.ASCII.GetBytes(jwtSection["Key"]);
+            var expireMinutes = int.Parse(jwtSection["ExpireMinutes"] ?? "60");
+
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_config["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
-            var expireMinutes = int.Parse(_config["Jwt:ExpireMinutes"] ?? "60");
+
+            var claims = new[]
+    {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.RoleId)
+            };
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId),
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.RoleId)
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(expireMinutes),
+                Issuer = jwtSection["Issuer"],
+                Audience = jwtSection["Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
-            Session session = new Session
+            Session session = new()
             {
                 SessionId = Guid.NewGuid().ToString(),
                 UserId = user.UserId,
