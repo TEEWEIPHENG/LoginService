@@ -166,20 +166,16 @@ namespace LoginService.Services
             }
         }
 
-        public async Task<string> RefreshJwtToken(string token)
+        public async Task<User> GetUserInfo(string userId)
         {
             _logger.LogInformation("========== Refresh Token Start ==========");
-            var session = _sessionRepository.GetByTokenAsync(token);
-            var user = await _userRepository.GetByUserIdAsync(session.Result.UserId);
-
-            if (session != null && user != null)
+            var user = await _userRepository.GetByUserIdAsync(userId);
+            if (user == null)
             {
-                return await GenerateJwtTokenAsync(user);
+                _logger.LogWarning("User not found for userId: {userId}", userId);
+                return null;
             }
-            else
-            {
-                throw new UnauthorizedAccessException("Invalid session or user.");
-            }
+            return user;
         }
 
         private async Task<string> GenerateJwtTokenAsync(User user)

@@ -9,6 +9,6 @@ namespace LoginService.Services
         Task<ProcessRegisterResponse> RegisterAsync(RegisterModel registerDto);
         Task<ProcessLoginResponse> LoginAsync(string username, string password);
         Task<bool> Logout(string token);
-        Task<string> RefreshJwtToken(string token);
+        Task<User> GetUserInfo(string userId);
     }
 }

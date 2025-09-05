@@ -51,16 +51,39 @@ namespace LoginService.Controllers
             return Ok(ok);
         }
 
-        [HttpPost("RefreshToken")]
-        public IActionResult Refresh([FromHeader(Name = "Authorization")] string? authHeader)
+        [HttpGet("GetUserInfo")]
+        public async Task<IActionResult> GetUserInfo()
         {
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                return Unauthorized(false);
+            var userId = Request.Headers["x-user-id"].FirstOrDefault();
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("Missing user id.");
+            }
+            var user = await _userService.GetUserInfo(userId);
 
-            var token = authHeader.Substring("Bearer ".Length);
-            var newJwt = _userService.RefreshJwtToken(token);
+            return Ok(user);
+        }
 
-            return Ok(new { token = newJwt });
+
+
+        [HttpPost("UpdateUserInfo")]
+        public async Task<IActionResult> UpdateUserInfo([FromBody] string key)
+        {
+            try
+            {
+                var userId = Request.Headers["x-user-id"].FirstOrDefault();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return BadRequest("Missing user id.");
+                }
+                //update user detail
+                return Ok();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return BadRequest("Something went wrong.");
+            }
         }
     }
 }
